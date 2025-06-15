@@ -1,2 +1,2 @@
 # aws_gpu
-softmax implementation
+softmax implementation using cuda and cutlass implementations
