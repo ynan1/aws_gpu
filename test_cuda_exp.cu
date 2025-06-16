@@ -110,6 +110,7 @@ int main() {
         cudaMemcpyAsync(dout + offset, gpu_dout + offset, size, cudaMemcpyDeviceToHost, stream[i]);
     }
     #endif
+    #endif
     
 
 
@@ -117,11 +118,19 @@ int main() {
         cout<<dout[i]<<endl;
     }
 
-    /*
+    
     delete[] din;
     delete[] dout;
+    
+    #ifndef USE_MANAGED
     cudaFree(gpu_din);
     cudaFree(gpu_dout);
-    */
+    #ifdef USE_STREAM
+    for (int i = 0; i < 3; i++) {
+        cudaStreamDestroy(stream[i]);
+    }
+    #endif
+    #endif
+    
     return;
 }
