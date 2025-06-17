@@ -10,20 +10,20 @@ using namespace std;
 __global__ void exponent(float* d_out,float* d_in){
 	int idx=threadIdx.x;
 	if (idx >= N) return;
-	d_out[idx]=expf(d_in[idx]);
+	d_out[idx]=exp2f(d_in[idx]);
 }
 
 
 int main(){
-	//srand(time(0));
+	srand(time(0));
 	float* din=new float[N];
 	float* dout=new float[N];
 	for (int i=0;i<N;i++){
-		din[i]=5;
+		din[i]=rand()%5;
 	}
 
 
-	exponent<<<1,1000>>>(dout,din);
+	exponent<<<1,100>>>(dout,din);
 	
 	float cum_abs_err;
 	float max_abs=0;
