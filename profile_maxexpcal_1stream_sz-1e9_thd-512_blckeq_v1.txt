@@ -1,0 +1,20 @@
+==15117== NVPROF is profiling process 15117, command: ./gpu_test
+==15117== Profiling application: ./gpu_test
+==15117== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   56.42%  1.40700s         2  703.50ms  1.1840us  1.40700s  [CUDA memcpy DtoH]
+                   34.69%  865.22ms         1  865.22ms  865.22ms  865.22ms  [CUDA memcpy HtoD]
+                    7.59%  189.19ms         1  189.19ms  189.19ms  189.19ms  max_n(float*, float const *)
+                    1.30%  32.497ms         1  32.497ms  32.497ms  32.497ms  exponent(float*, float const *, float*)
+      API calls:   91.93%  2.49512s         3  831.71ms  51.360us  1.62970s  cudaMemcpy
+                    6.95%  188.61ms         3  62.869ms  67.687us  188.29ms  cudaMalloc
+                    0.77%  20.810ms         2  10.405ms  7.7930us  20.803ms  cudaLaunchKernel
+                    0.24%  6.5816ms         2  3.2908ms  2.3630ms  4.2186ms  cudaFree
+                    0.11%  2.9996ms       114  26.312us      82ns  1.7178ms  cuDeviceGetAttribute
+                    0.00%  30.105us         1  30.105us  30.105us  30.105us  cuDeviceGetName
+                    0.00%  3.9740us         1  3.9740us  3.9740us  3.9740us  cuDeviceTotalMem
+                    0.00%  1.7100us         1  1.7100us  1.7100us  1.7100us  cuDeviceGetPCIBusId
+                    0.00%     963ns         2     481ns     108ns     855ns  cuDeviceGet
+                    0.00%     866ns         3     288ns     100ns     586ns  cuDeviceGetCount
+                    0.00%     569ns         1     569ns     569ns     569ns  cuModuleGetLoadingMode
+                    0.00%     187ns         1     187ns     187ns     187ns  cuDeviceGetUuid
