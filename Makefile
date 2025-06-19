@@ -13,6 +13,10 @@
 
 .PHONY: cmp_exp cmp_exp_dbg run_exp clean cmp_test cmp_test_dbg run_test
 
+softmax_test:
+	nvcc softmax_3stream.cu -o gpu_softmax_test
+softmax_test_dbg:
+	nvcc -g -G softmax_3stream.cu -o gpu_softmax_test_dbg
 cmp_test_unified:
 	nvcc -DUSE_MANAGED test_cuda_exp.cu -o gpu_test_unified
 cmp_test_unified_dbg:
@@ -32,3 +36,4 @@ run_exp:
 clean:
 	rm -rf gpu_exponent*;
 	rm -rf gpu_test*;
+	rm -rf gpu_softmax_test*;

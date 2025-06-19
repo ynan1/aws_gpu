@@ -13,22 +13,36 @@
 #include <device_launch_parameters.h>
 
 
-#define N 1000000000  // Correctly define as integer
+#define N 33554432  // Correctly define as integer
 #define THREADS_PER_BLOCK 1024
 
 
 using namespace std;
 
 __device__ float sum_arr= 0.0f; // Initialize sum_arr in device memory
+__device__ float max_val = FLT_MIN; // Pointer to max_val in device memory
+
+/*__device__ float atomicMaxFloat(float* addr, float value) {
+    unsigned int* intAddr = (unsigned int*)addr;
+    unsigned int oldInt = *intAddr, assumedInt;
+
+    do {
+        assumedInt = oldInt;
+        float assumedFloat = __int_as_float(assumedInt);
+        if (assumedFloat >= value) break;
+        oldInt = atomicCAS(intAddr, assumedInt, __float_as_int(value));
+    } while (assumedInt != oldInt);
+
+    return __int_as_float(oldInt);
+}*/
 
 // CUDA kernel
-__global__ void max_n(float* max_val, const float* d_in) {
+__global__ void max_n(const float* d_in) {
     int idx = threadIdx.x;
     int stride = blockDim.x;
+    if (idx >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
     __shared__ float shared_max[THREADS_PER_BLOCK];
     float max_l = -FLT_MAX;
-    //shared_max[idx] = (idx < N) ? d_in[idx] : -FLT_MAX; // Initialize shared memory with input values or -FLT_MAX
-    __syncthreads();
     // Find the maximum value per thread block
     for (int i=idx; i < N; i += stride) {
         max_l = fmaxf(max_l, d_in[i]);
@@ -44,22 +58,37 @@ __global__ void max_n(float* max_val, const float* d_in) {
    }
     // Write the maximum value to global memory
     if (idx == 0) {
-        *max_val = shared_max[0];
+        max_val = shared_max[0];
     }
 }
 
-__global__ void exponent(float* d_out, const float* d_in,float* max_val) {
+__global__ void exponent(float* d_out, const float* d_in) {
     //2D Block indexing
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    //__shared__ float sum_arr_shd; // Shared memory for sum
+    
+    if (idx >= N) return; // Ensure we don't access out of bounds
     if (idx < N) {
-        d_out[idx] = expf(d_in[idx] - *max_val);
+        d_out[idx] = expf(d_in[idx] - max_val);
+    }
+    
+    __shared__ float block_sum;
+
+    if (threadIdx.x == 0) { // Initialize block_sum only once per block
+        block_sum = 0.0f;
     }
     __syncthreads();
-
-    //Add all the values in d_out
-    atomicAdd(&sum_arr, d_out[idx]);
+    // Use atomic operations to safely update the sum across threads
+    if (idx < N) {
+        atomicAdd(&block_sum, d_out[idx]);
+    }
     __syncthreads();
+    // Use atomic operation to safely update the global sum
+    //if (threadIdx.x == 0) { // Only one thread per block updates the global sum
+        atomicAdd(&sum_arr, block_sum);
+    //}
 
+    //printf("idx %d dout= %f sum_arr = %f\n", idx, d_out[idx], sum_arr); // Debugging output
     // Normalize the output
     if (idx < N) {
         d_out[idx] /= sum_arr;
@@ -71,7 +100,7 @@ thread_local std::mt19937 generator(std::random_device{}());
 
 // Generate random numbers for a part of the array
 void drand(float* arr, int size) {
-    uniform_real_distribution<float> distribution(0.0f, 3.0f);
+    uniform_real_distribution<float> distribution(5.0f, 10.0f);
     for (int i = 0; i < size; i++) {
         arr[i] = distribution(generator);
     }
@@ -81,10 +110,14 @@ int main(int argc,char* argv[]) {
     #ifdef USE_MANAGED
     float* din= nullptr;
     float* dout= nullptr;
-    float* max_val= nullptr; // Initialize max_val to a very small value
-    cudaMallocManaged(&max_val, sizeof(float));
     cudaMallocManaged(&din, sizeof(float) * N);
     cudaMallocManaged(&dout, sizeof(float) * N);
+
+    if (!din || !dout) {
+        cerr << "Managed memory allocation failed!" << endl;
+        return -1;
+    }
+
     #else
     float* din = new float[N];
     float* dout = new float[N];
@@ -112,11 +145,10 @@ int main(int argc,char* argv[]) {
 #ifdef USE_MANAGED
     cudaMemPrefetchAsync(din, sizeof(float) * N, 0);
 #else
-    float *gpu_din, *gpu_dout, *max_val_ptr;
+    float *gpu_din, *gpu_dout;
     cudaError_t err;
     err = cudaMalloc(&gpu_din, sizeof(float) * N);
     err = cudaMalloc(&gpu_dout, sizeof(float) * N);
-    err = cudaMalloc(&max_val_ptr, sizeof(float));
 
     if (err != cudaSuccess) {
         cerr << "GPU memory allocation failed!" << endl;
@@ -152,14 +184,14 @@ int blocks = (N + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 #ifdef USE_MANAGED
     // Launch the kernel (single stream)
     // Find the max_val of the array
-    max_n<<<1, THREADS_PER_BLOCK>>>(max_val, din);
-    exponent<<<blocks, THREADS_PER_BLOCK>>>(dout, din, max_val);
+    max_n<<<1, THREADS_PER_BLOCK>>>(din);
+    exponent<<<blocks, THREADS_PER_BLOCK>>>(dout, din);
     cudaDeviceSynchronize();
-    cout<<*max_val<<" "<<max_val_cpu<<endl;
+    //cout<<*max_val<<" "<<max_val_cpu<<endl;
 #else
     // Launch the kernel (single stream)
-    max_n<<<1,THREADS_PER_BLOCK>>>(max_val_ptr,gpu_din);
-    exponent<<<blocks, THREADS_PER_BLOCK>>>(gpu_dout, gpu_din,max_val_ptr);
+    max_n<<<1,THREADS_PER_BLOCK>>>(gpu_din);
+    exponent<<<blocks, THREADS_PER_BLOCK>>>(gpu_dout, gpu_din);
     cudaMemcpy(dout, gpu_dout, sizeof(float) * N, cudaMemcpyDeviceToHost);
     //cudaMemcpy(&max_val, max_val_ptr, sizeof(float), cudaMemcpyDeviceToHost);
     //cout<<max_val<<" "<<max_val_cpu<<endl;
@@ -171,16 +203,24 @@ int blocks = (N + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
     float sum_arr_host=0.0f;
     float* exp_arr=new float[N];
 
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
     for (int i = 0; i < N; ++i) {
         exp_arr[i] = expf(din[i] - max_val_cpu);
         sum_arr_host += exp_arr[i];
     }
-
+    //cout<<"sum_arr_host: "<<sum_arr_host<<endl;
+    //cout<<"sum_arr_gpu: "<<*sum_arr<<" sum_arr_cpu: "<<sum_arr_host<<endl;
 	for (int i=0;i<N;i++){
         float exp= exp_arr[i]/sum_arr_host;
 		cum_abs_err+=fabs(dout[i]-exp);
 		max_abs=fmax(max_abs,fabs(dout[i]-exp));
 	}
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+    cout << "Time taken for CPU computation: " << elapsed << " seconds" << endl;
+
 
 	cout<<"cumm_abs_error: "<<cum_abs_err<<endl;
 	cout<<"max_abs_err: "<<max_abs<<endl;    
@@ -192,13 +232,11 @@ int blocks = (N + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
 #ifdef USE_MANAGED
     cudaFree(din);
     cudaFree(dout);
-    cudaFree(max_val);
 #else
     delete[] din;
     delete[] dout;
     cudaFree(gpu_din);
     cudaFree(gpu_dout);
-    cudaFree(max_val_ptr);
 #endif
 
 
