@@ -14,23 +14,23 @@
 .PHONY: cmp_exp cmp_exp_dbg run_exp clean cmp_test cmp_test_dbg run_test
 
 softmax_test:
-	nvcc softmax_3stream.cu -o gpu_softmax_test
+	nvcc -Iinclude src/softmax_3stream.cu -o gpu_softmax_test
 softmax_test_dbg:
-	nvcc -g -G softmax_3stream.cu -o gpu_softmax_test_dbg
+	nvcc -g -G -Iinclude src/softmax_3stream.cu -o gpu_softmax_test_dbg
 cmp_test_unified:
-	nvcc -DUSE_MANAGED test_cuda_exp.cu -o gpu_test_unified
+	nvcc -DUSE_MANAGED -Iinclude src/test_cuda_exp.cu -o gpu_test_unified
 cmp_test_unified_dbg:
-	nvcc -g -G -DUSE_MANAGED test_cuda_exp.cu -o gpu_test_unified_dbg
+	nvcc -g -G -DUSE_MANAGED -Iinclude src/test_cuda_exp.cu -o gpu_test_unified_dbg
 cmp_test:
-	nvcc test_cuda_exp.cu -o gpu_test
+	nvcc -Iinclude src/test_cuda_exp.cu -o gpu_test
 cmp_test_dbg:
-	nvcc -g -G test_cuda_exp.cu -o gpu_test_dbg
+	nvcc -g -G -Iinclude src/test_cuda_exp.cu -o gpu_test_dbg
 run_test:
 	./gpu_test;
 cmp_exp_dbg:
-	nvcc -g -G exponent_cuda.cu -o gpu_exponent_dbg
+	nvcc -g -G -Iinclude src/exponent_cuda.cu -o gpu_exponent_dbg
 cmp_exp:
-	nvcc exponent_cuda.cu -o gpu_exponent
+	nvcc -Iinclude src/exponent_cuda.cu -o gpu_exponent
 run_exp:
 	./gpu_exponent;
 clean:

@@ -17,41 +17,62 @@ void drand(float* arr, int size) {
 }
 
 //Kernel to find the softmax
-//__device__ float sum_arr = 0.0f; // Initialize sum_arr in device memory
+// __device__ float sum_arr=0.0f; // Initialize sum_arr in device memory
 __device__ float max_val[THREADS_PER_BLOCK]; // Pointer to max_val in device memory
 
-__global__ void row_max( const float* d_in,const int N_blocks) {
-    int idx = threadIdx.x;
-    if (idx >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
-    //__shared__ float shared_max[THREADS_PER_BLOCK];
+__global__ void row_red_max( const float* d_in,const int& N_blocks) {
+    if (blockIdx.x >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
+    if (threadIdx.x >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
+    
+    int idx = threadIdx.x; // Thread index within the block
+    __shared__ float shared_max[THREADS_PER_BLOCK];
+    float* d_in_ptr = const_cast<float*>(d_in + blockIdx.x * N_blocks); // Cast to non-const pointer
     float max_l = -FLT_MAX;
+    int stride = blockDim.x; // Number of threads in a block
+
     // Find the maximum value per thread block
-    for (int i = 0; i < N_blocks; i++) {
-        int col = idx * blockDim.x + i;
-        max_l = fmaxf(max_l, d_in[col]);
+    for (int i = idx; i < N_blocks; i+= stride) {
+        max_l = fmaxf(max_l, d_in_ptr[i]);
     }
-    //printf("max_l: %f\n", max_l); // Debugging output
-    //shared_max[idx] = max_l;
-    //__syncthreads();
-    max_val[idx] = max_l;
+    shared_max[idx] = max_l; // Store the maximum value in shared memory
+    __syncthreads();
+
+    // Reduce to find the maximum value in shared memory
+    for (int s = stride / 2; s > 0; s >>= 1) {
+        if (idx < s && idx + s < THREADS_PER_BLOCK) {
+            shared_max[idx] = fmaxf(shared_max[idx], shared_max[idx + s]);
+        }
+        __syncthreads();
+    }
+
+    // Write the maximum value to global memory
+    if (idx == 0) { // Only the first thread writes to global memory
+        max_val[blockIdx.x] = shared_max[0]; // Store the maximum value for this block
+    }
+   
+    
 }
 
-__global__ void exponent(float* d_out, const float* d_in) {
+__global__ void exponent(float* d_out, const float* d_in,const int& N_blocks) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    __shared__ float sum_arr_shd; // Shared memory for sum
+    __shared__ float sum_arr_shd[THREADS_PER_BLOCK]; // Shared memory for sum
     if (idx >= N) return; // Ensure we don't access out of bounds
-    d_out[idx] = expf(d_in[idx] - max_val[blockIdx.x]);
-    if (threadIdx.x == 0) sum_arr_shd = 0.0f; // Initialize shared sum to zero
-    __syncthreads();
-    // Atomic addition to shared sum
-    atomicAdd(&sum_arr_shd, d_out[idx]);
-    __syncthreads();
-    //printf(" sum_arr_shd: %f\n", sum_arr_shd); // Debugging output
+    
+    d_out[idx] = expf(d_in[idx] - max_val[idx/gridDim.x]); // Normalize by the maximum value for the block
+    sum_arr_shd[threadIdx.x] = d_out[idx]; // Initialize shared memory for sum
+    // __syncthreads();
+    // if (idx==1023) {
+    //     printf("dout: %.7f\n", d_out[idx]); // Debugging output
+    // }
+
+    // Add the values in shared memory to compute the sum
+    
+
     // Divide by the sum to normalize
-    if (sum_arr_shd > 0.0f) {
-        d_out[idx] /= sum_arr_shd;
-    }else {
-        d_out[idx] = 0.0f; // Avoid division by zero
+    d_out[idx] /= sum_arr[idx/gridDim.x];
+
+    if (idx==0) {
+        printf("dout after normalization: %.7f, idx:%d, sum_arr: %f\n", d_out[idx],idx, sum_arr);
     }
 }
 
@@ -108,8 +129,11 @@ int main(int argc,char* argv[]) {
         int end = min(start + N_blocks, N);
         for (int j = start; j < end; j++){
             max_elem[i] = fmax(max_elem[i], din[j]);
-        }   
+        }
+        //cout<<max_elem[i] << " "<<endl;   
     }
+
+    
     
     for (int i = 0; i < N; i++) {
         //cout<< max_elem[i / M] << " "<<endl;
@@ -117,16 +141,14 @@ int main(int argc,char* argv[]) {
         norm[i / N_blocks] += exp_cpu[i];
     }
     //cout<<N/M<<endl;
-    
+    // cout<<"exp: "<<setprecision(7)<<exp_cpu[0]<<" "<<exp_cpu[M-1]<<endl;
+
     for (int i=0;i<N;i++){
         exp_cpu[i] = exp_cpu[i] / norm[i / N_blocks];
     }
 
-    //cout<<norm[0]<<" "<<norm[M-1]<<endl;
-    
-    
-    
-    
+    cout<<fixed<<setprecision(7)<<exp_cpu[0]<<" "<<exp_cpu[1023]<<" "<<norm[0]<<endl;
+
     if (err != cudaSuccess) {
         cerr << "Memory prefetch failed!" << endl;
         return -1;
@@ -144,13 +166,22 @@ int main(int argc,char* argv[]) {
         }
     }*/
 
+    int grid=M;
 
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
-    row_max<<<1, block>>>(din, N_blocks);
+    row_red_max<<<grid, block>>>(din, N_blocks);
 
-    exponent<<<N_blocks, block>>>(dout, din);
+    exponent<<<N_blocks, block>>>(dout, din, N_blocks);
 
-   err=cudaDeviceSynchronize();
+    err=cudaDeviceSynchronize();
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec)*1e-9;
+    cout<< "Time taken for GPU computation: "
+         << elapsed_time << " seconds" << endl;
 
     if (err != cudaSuccess) {
          cerr << "Device synchronization failed!" << endl;
