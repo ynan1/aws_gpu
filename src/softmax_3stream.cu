@@ -49,30 +49,44 @@ __global__ void row_red_max( const float* d_in,const int& N_blocks) {
     if (idx == 0) { // Only the first thread writes to global memory
         max_val[blockIdx.x] = shared_max[0]; // Store the maximum value for this block
     }
-   
-    
+
 }
 
-__global__ void exponent(float* d_out, const float* d_in,const int& N_blocks) {
+__global__ void exponent(float* d_out, const float* d_in) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    __shared__ float sum_arr_shd[THREADS_PER_BLOCK]; // Shared memory for sum
     if (idx >= N) return; // Ensure we don't access out of bounds
     
     d_out[idx] = expf(d_in[idx] - max_val[idx/gridDim.x]); // Normalize by the maximum value for the block
-    sum_arr_shd[threadIdx.x] = d_out[idx]; // Initialize shared memory for sum
-    // __syncthreads();
-    // if (idx==1023) {
-    //     printf("dout: %.7f\n", d_out[idx]); // Debugging output
-    // }
+    
+}
 
-    // Add the values in shared memory to compute the sum
+__global__ void normalize(float* d_out, const int& N_blocks) {
+    // Initialize shared memory for sum
+    int stride = blockDim.x; // Number of threads in a block
+    int ix= threadIdx.x; // Thread index within the block
+    __shared__ float norm_shd[THREADS_PER_BLOCK]; // Shared memory for sum
+    float* dout_ptr = d_out + blockIdx.x * N_blocks; // Pointer to the output array for this block
+    float sum=0.0f;
+
+    // Calculate the sum of exponentials in this block
+    for (int i = ix; i < N_blocks; i += stride) {
+        sum+= dout_ptr[i];
+    }
+    norm_shd[ix] = sum; // Store the sum in shared memory
+    __syncthreads(); // Ensure all threads have completed before proceeding
     
 
-    // Divide by the sum to normalize
-    d_out[idx] /= sum_arr[idx/gridDim.x];
+    // Reduce to find the total sum in shared memory
+    for (int s = stride / 2; s > 0; s >>= 1) {
+        if (ix < s && ix + s < THREADS_PER_BLOCK) {
+            norm_shd[ix] += norm_shd[ix + s];
+        }
+        __syncthreads();
+    }
 
-    if (idx==0) {
-        printf("dout after normalization: %.7f, idx:%d, sum_arr: %f\n", d_out[idx],idx, sum_arr);
+    // Divide by the sum to normalize
+    for(int i = ix; i < N_blocks; i += stride) {
+        dout_ptr[i] = dout_ptr[i] / norm_shd[0]; // Normalize by the total sum
     }
 }
 
@@ -141,13 +155,13 @@ int main(int argc,char* argv[]) {
         norm[i / N_blocks] += exp_cpu[i];
     }
     //cout<<N/M<<endl;
-    // cout<<"exp: "<<setprecision(7)<<exp_cpu[0]<<" "<<exp_cpu[M-1]<<endl;
+    // cout<<"exp: "<<setprecision(7)<<"exp:"<<exp_cpu[78762]<<endl;
 
     for (int i=0;i<N;i++){
         exp_cpu[i] = exp_cpu[i] / norm[i / N_blocks];
     }
 
-    cout<<fixed<<setprecision(7)<<exp_cpu[0]<<" "<<exp_cpu[1023]<<" "<<norm[0]<<endl;
+    // cout<<"after normalize exp:"<<fixed<<setprecision(7)<<exp_cpu[76254]<<" norm:"<<norm[76254/N_blocks]<<endl;
 
     if (err != cudaSuccess) {
         cerr << "Memory prefetch failed!" << endl;
@@ -173,7 +187,9 @@ int main(int argc,char* argv[]) {
 
     row_red_max<<<grid, block>>>(din, N_blocks);
 
-    exponent<<<N_blocks, block>>>(dout, din, N_blocks);
+    exponent<<<N_blocks, block>>>(dout, din);
+
+    normalize<<<grid, block>>>(dout, N_blocks);
 
     err=cudaDeviceSynchronize();
 
@@ -198,6 +214,7 @@ int main(int argc,char* argv[]) {
         cum_abs_err += fabs(dout[i] - exp_cpu[i]);
         max_abs = fmax(max_abs, fabs(dout[i] - exp_cpu[i]));
     }
+
 
     cout << "cumm_abs_error: " << cum_abs_err << endl;
     cout << "max_abs_err: " << max_abs << endl;

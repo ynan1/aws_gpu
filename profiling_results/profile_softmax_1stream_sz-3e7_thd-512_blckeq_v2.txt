@@ -1,0 +1,28 @@
+==10783== NVPROF is profiling process 10783, command: ./gpu_softmax_test
+==10783== Profiling application: ./gpu_softmax_test
+==10783== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:   66.75%  39.873ms         1  39.873ms  39.873ms  39.873ms  row_red_max(float const *, int const &)
+                   19.93%  11.903ms         1  11.903ms  11.903ms  11.903ms  exponent(float*, float const *)
+                   13.32%  7.9593ms         1  7.9593ms  7.9593ms  7.9593ms  normalize(float*, int const &)
+      API calls:   69.13%  180.92ms         2  90.462ms  23.412us  180.90ms  cudaMallocManaged
+                   22.82%  59.726ms         1  59.726ms  59.726ms  59.726ms  cudaDeviceSynchronize
+                    5.40%  14.140ms         3  4.7132ms  16.105us  8.1031ms  cudaFree
+                    1.31%  3.4301ms         1  3.4301ms  3.4301ms  3.4301ms  cudaMemPrefetchAsync
+                    1.12%  2.9434ms       114  25.819us      85ns  1.6926ms  cuDeviceGetAttribute
+                    0.21%  545.39us         3  181.80us  7.4120us  527.59us  cudaLaunchKernel
+                    0.00%  9.9430us         1  9.9430us  9.9430us  9.9430us  cuDeviceGetName
+                    0.00%  3.6440us         1  3.6440us  3.6440us  3.6440us  cuDeviceTotalMem
+                    0.00%  1.4670us         1  1.4670us  1.4670us  1.4670us  cuDeviceGetPCIBusId
+                    0.00%     736ns         3     245ns     104ns     509ns  cuDeviceGetCount
+                    0.00%     613ns         2     306ns     116ns     497ns  cuDeviceGet
+                    0.00%     235ns         1     235ns     235ns     235ns  cuModuleGetLoadingMode
+                    0.00%     177ns         1     177ns     177ns     177ns  cuDeviceGetUuid
+
+==10783== Unified Memory profiling result:
+Device "Tesla T4 (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+    3159  83.008KB  4.0000KB  2.0000MB  256.0781MB  48.32209ms  Host To Device
+    1542  170.05KB  4.0000KB  0.9961MB  256.0781MB  42.42959ms  Device To Host
+     315         -         -         -           -  58.43657ms  Gpu page fault groups
+Total CPU Page faults: 1154

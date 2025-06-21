@@ -1,6 +1,5 @@
-#ifndef SOFTMAX_CUDA_H
-#define SOFTMAX_CUDA_H
-
+#ifndef SOFTMAX_CUDA_CUH
+#define SOFTMAX_CUDA_CUH
 # pragma once
 #include <iostream>
 #include <random>
@@ -13,13 +12,8 @@
 #include <functional>
 #include <atomic>
 #include <cmath>
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 
 
-__global__ void row_max( const float* d_in,const int N_blocks) ;
+__global__ void softmax_fused(float* resd, const float* xd, const int M,const int N)
 
-__global__ void exponent(float* d_out, const float* d_in) ;
-
-#endif // SOFTMAX_CUDA_H
+#endif // SOFTMAX_CUDA_CUH
