@@ -1,4 +1,4 @@
-#include "softmax_cuda.cuh"
+#include "softmax_seq.cuh"
 
 #define N 33554432  // Correctly define as integer
 #define THREADS_PER_BLOCK 1024
@@ -61,6 +61,8 @@ __global__ void exponent(float* d_out, const float* d_in) {
 }
 
 __global__ void normalize(float* d_out, const int& N_blocks) {
+    if (blockIdx.x >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
+    if (threadIdx.x >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
     // Initialize shared memory for sum
     int stride = blockDim.x; // Number of threads in a block
     int ix= threadIdx.x; // Thread index within the block
