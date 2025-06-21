@@ -14,9 +14,9 @@
 .PHONY: cmp_exp cmp_exp_dbg run_exp clean cmp_test cmp_test_dbg run_test cmp_test_unified cmp_test_unified_dbg softmax_fused softmax_fused_dbg softmax_test softmax_test_dbg
 
 softmax_fused:
-	nvcc -Iinclude src/main.cu src/softmax_fused.cu -o gpu_softmax_fused
+	nvcc -Iinclude main.cu src/softmax_fused.cu -o gpu_softmax_fused
 softmax_fused_dbg:
-	nvcc -g -G -Iinclude src/main.cu src/softmax_fused.cu -o gpu_softmax_fused_dbg
+	nvcc -g -G -Iinclude main.cu src/softmax_fused.cu -o gpu_softmax_fused_dbg
 softmax_test:
 	nvcc -Iinclude src/softmax_3stream.cu -o gpu_softmax_test
 softmax_test_dbg:
