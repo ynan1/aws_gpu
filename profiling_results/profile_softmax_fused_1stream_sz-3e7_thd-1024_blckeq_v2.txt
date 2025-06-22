@@ -1,0 +1,26 @@
+==7644== NVPROF is profiling process 7644, command: ./gpu_softmax_fused
+==7644== Profiling application: ./gpu_softmax_fused
+==7644== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:  100.00%  51.889ms         1  51.889ms  51.889ms  51.889ms  softmax_fused(float*, float const *, int, int)
+      API calls:   66.18%  178.50ms         2  89.249ms  16.808us  178.48ms  cudaMallocManaged
+                   19.24%  51.899ms         1  51.899ms  51.899ms  51.899ms  cudaDeviceSynchronize
+                    8.16%  21.997ms         1  21.997ms  21.997ms  21.997ms  cudaMemPrefetchAsync
+                    5.24%  14.122ms         2  7.0608ms  6.0118ms  8.1098ms  cudaFree
+                    1.07%  2.8877ms       114  25.330us      84ns  1.6273ms  cuDeviceGetAttribute
+                    0.10%  281.79us         1  281.79us  281.79us  281.79us  cudaLaunchKernel
+                    0.00%  10.022us         1  10.022us  10.022us  10.022us  cuDeviceGetName
+                    0.00%  3.8920us         1  3.8920us  3.8920us  3.8920us  cuDeviceTotalMem
+                    0.00%  1.1720us         1  1.1720us  1.1720us  1.1720us  cuDeviceGetPCIBusId
+                    0.00%     745ns         2     372ns     103ns     642ns  cuDeviceGet
+                    0.00%     672ns         3     224ns     113ns     427ns  cuDeviceGetCount
+                    0.00%     206ns         1     206ns     206ns     206ns  cuModuleGetLoadingMode
+                    0.00%     158ns         1     158ns     158ns     158ns  cuDeviceGetUuid
+
+==7644== Unified Memory profiling result:
+Device "Tesla T4 (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+    2818  93.024KB  4.0000KB  2.0000MB  256.0000MB  47.62703ms  Host To Device
+    1536  170.67KB  4.0000KB  0.9961MB  256.0000MB  42.41279ms  Device To Host
+     215         -         -         -           -  57.26098ms  Gpu page fault groups
+Total CPU Page faults: 1152

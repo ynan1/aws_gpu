@@ -20,7 +20,7 @@ void drand(float* arr, int size) {
 // __device__ float sum_arr=0.0f; // Initialize sum_arr in device memory
 __device__ float max_val[THREADS_PER_BLOCK]; // Pointer to max_val in device memory
 
-__global__ void row_red_max( const float* d_in,const int& N_blocks,const int& offset) {
+__global__ void row_red_max( const float* d_in,const int& N_blocks) {
     if (blockIdx.x >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
     if (threadIdx.x >= THREADS_PER_BLOCK) return; // Ensure we don't access out of bounds
     
@@ -47,15 +47,15 @@ __global__ void row_red_max( const float* d_in,const int& N_blocks,const int& of
 
     // Write the maximum value to global memory
     if (idx == 0) { // Only the first thread writes to global memory
-        max_val[blockIdx.x+offset] = shared_max[0]; // Store the maximum value for this block
+        max_val[blockIdx.x] = shared_max[0]; // Store the maximum value for this block
     }
 
 }
 
-__global__ void exponent(float* d_out, const float* d_in,const int& offset) {
+__global__ void exponent(float* d_out, const float* d_in) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= N) return; // Ensure we don't access out of bounds
-    d_out[idx] = expf(d_in[idx] - max_val[idx/gridDim.x+offset]); // Normalize by the maximum value for the block
+    d_out[idx] = expf(d_in[idx] - max_val[idx/gridDim.x]); // Normalize by the maximum value for the block
     
 }
 
@@ -120,7 +120,7 @@ int main(int argc,char* argv[]) {
     }
 
     // Copy input data to GPU
-    
+    err=cudaMemPrefetchAsync(din, sizeof(float) * N, 0);
 
     int M=THREADS_PER_BLOCK; //rows
     int N_blocks=(N+M-1)/M; //cols
@@ -171,27 +171,17 @@ int main(int argc,char* argv[]) {
 
     //Kernel launch parameters
     dim3 block(THREADS_PER_BLOCK);
-    int grid[4]={M/3,M/3,M/3,M/3+M%3};// Divide rows into 3 streams
-    cudaStream_t stream[3];
-    
-    for (int i = 0; i < 3; ++i) {
-        err=cudaStreamCreate(&stream[i]);
-        err=cudaMemPrefetchAsync(din+i*N_blocks*grid[i], sizeof(float) * grid[i+1], 0, stream[i]);
-        if (err != cudaSuccess) {
-            cerr << "Stream creation failed!" << endl;
-            return -1;
-        }
-    }
 
-    
+    int grid=M;
+
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    for (int i = 0; i < 3; ++i) {
-        row_red_max<<<grid[i+1], block, 0, stream[i]>>>(din+i*N_blocks*grid[i], N_blocks,i*grid[i]);
-        exponent<<<grid[i+1], block, 0, stream[i]>>>(dout+i*N_blocks*grid[i], din+i*N_blocks*grid[i],i*grid[i]);
-        normalize<<<grid[i+1], block, 0, stream[i]>>>(dout+i*N_blocks*grid[i], N_blocks);
-    }
+    row_red_max<<<grid, block>>>(din, N_blocks);
+
+    exponent<<<N_blocks, block>>>(dout, din);
+
+    normalize<<<grid, block>>>(dout, N_blocks);
 
     err=cudaDeviceSynchronize();
 
@@ -228,9 +218,6 @@ int main(int argc,char* argv[]) {
 
     cudaFree(din);
     cudaFree(dout);
-    
-    for (int i = 0; i < 3; ++i)
-        cudaStreamDestroy(stream[i]);
-    
+   
     return 0;
 }

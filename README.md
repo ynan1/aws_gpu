@@ -1,2 +1,3 @@
 # aws_gpu
-softmax implementation using cuda and cutlass implementations
+Softmax implementation using Tesla T4 GPU in CUDA
+

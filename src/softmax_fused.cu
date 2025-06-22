@@ -1,8 +1,6 @@
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
+#include "softmax_cuda.cuh"
 
-__global__ void softmax_fused(float* resd, const float* xd, const int M,const int N) {
+extern __global__ void softmax_fused(float* resd, const float* xd, const int M,const int N) {
      // max and norm reduction will happen in shared memory (static)
     __shared__ float smem[1024];
 
@@ -12,7 +10,7 @@ __global__ void softmax_fused(float* resd, const float* xd, const int M,const in
     // edge condition (we don't process further)
     if (row >= M) return;
 
-    float* input_row = xd + row * N;
+    float* input_row = const_cast<float*>(xd + row * N);
     float* output_row = resd + row * N;
     float local_max = -INFINITY;
     float local_norm = 0.0f;

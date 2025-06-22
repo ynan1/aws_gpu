@@ -1,6 +1,7 @@
 #include "softmax_cuda.cuh"
 
 
+#define THREADS_PER_BLOCK 1024
 
 using namespace std;
 
@@ -16,18 +17,18 @@ void drand(float* arr, int size) {
 }
 
 
-
-
 int main() {
 
     cudaError_t err;
     // Allocate managed memory for input and output arrays
     float* din= nullptr;
     float* dout= nullptr;
-    //float* max_val = nullptr;
+    int M=1024;
+    int N=32768;
+    int MAT_SIZE = M * N; // Total number of elements
 
-    err=cudaMallocManaged(&din, sizeof(float) * N);
-    err=cudaMallocManaged(&dout, sizeof(float) * N);
+    err=cudaMallocManaged(&din, sizeof(float) * MAT_SIZE);
+    err=cudaMallocManaged(&dout, sizeof(float) * MAT_SIZE);
     //err=cudaMallocManaged(&max_val, sizeof(float) * THREADS_PER_BLOCK);
 
     if (err != cudaSuccess) {
@@ -37,7 +38,7 @@ int main() {
 
     // Fill input array using 4 CPU threads
     thread threads[4];
-    int chunk = N / 4;
+    int chunk = MAT_SIZE/ 4;
     for (int i = 0; i < 4; ++i) {
         threads[i] = thread(drand, din + i * chunk, chunk);
     }
@@ -47,15 +48,12 @@ int main() {
     }
 
     // Copy input data to GPU
-    err=cudaMemPrefetchAsync(din, sizeof(float) * N, 0);
-
-    int M=THREADS_PER_BLOCK; //rows
-    int N_blocks=(N+M-1)/M; //cols
+    err=cudaMemPrefetchAsync(din, sizeof(float) * MAT_SIZE, 0);
 
 
     float* max_elem= new float[M];//per row max
     float* norm= new float[M];//per row norm
-    float* exp_cpu = new float[N]; // CPU array for exponentiation
+    float* exp_cpu = new float[MAT_SIZE]; // CPU array for exponentiation
     if (!max_elem || !norm || !exp_cpu) {
         cerr << "Host memory allocation failed!" << endl;
         return -1;
@@ -67,8 +65,8 @@ int main() {
     
     // Calculate max and norm on CPU
     for (int i=0;i<M;i++){
-        int start = i * N_blocks;
-        int end = min(start + N_blocks, N);
+        int start = i * N;
+        int end = min(start + N, MAT_SIZE);
         for (int j = start; j < end; j++){
             max_elem[i] = fmax(max_elem[i], din[j]);
         }
@@ -77,16 +75,16 @@ int main() {
 
     
     
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < MAT_SIZE; i++) {
         //cout<< max_elem[i / M] << " "<<endl;
-        exp_cpu[i] = expf(din[i] - max_elem[i / N_blocks]);
-        norm[i / N_blocks] += exp_cpu[i];
+        exp_cpu[i] = expf(din[i] - max_elem[i / N]);
+        norm[i / N] += exp_cpu[i];
     }
     //cout<<N/M<<endl;
     // cout<<"exp: "<<setprecision(7)<<"exp:"<<exp_cpu[78762]<<endl;
 
-    for (int i=0;i<N;i++){
-        exp_cpu[i] = exp_cpu[i] / norm[i / N_blocks];
+    for (int i=0;i<MAT_SIZE;i++){
+        exp_cpu[i] = exp_cpu[i] / norm[i / N];
     }
 
     // cout<<"after normalize exp:"<<fixed<<setprecision(7)<<exp_cpu[76254]<<" norm:"<<norm[76254/N_blocks]<<endl;
@@ -125,7 +123,7 @@ int main() {
 
     //cout<<"sum_arr_host: "<<sum_arr_host<<endl;
     //cout<<"sum_arr_gpu: "<<*sum_arr<<" sum_arr_cpu: "<<sum_arr_host<<endl;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < MAT_SIZE; i++) {
         cum_abs_err += fabs(dout[i] - exp_cpu[i]);
         max_abs = fmax(max_abs, fabs(dout[i] - exp_cpu[i]));
     }
@@ -141,10 +139,6 @@ int main() {
 
     cudaFree(din);
     cudaFree(dout);
-    cudaFree(max_val);
-    /*
-    for (int i = 0; i < 3; ++i)
-        cudaStreamDestroy(stream[i]);
-    */
+    
     return 0;
 }
