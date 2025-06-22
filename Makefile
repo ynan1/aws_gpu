@@ -44,4 +44,5 @@ run_exp:
 clean:
 	rm -rf gpu_exponent*;
 	rm -rf gpu_test*;
-	rm -rf gpu_softmax_test*;
+	rm -rf gpu_softmax_*;
+
