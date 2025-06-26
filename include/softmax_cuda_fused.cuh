@@ -14,7 +14,10 @@
 #include <cuda.h>
 
 #define THREADS_PER_BLOCK 1024
+#define CEIL_DIV(a, b) (((a) + (b) - 1) / (b))
+#define N_BLOCKS CEIL_DIV(1000000,(THREADS_PER_BLOCK*32))
+
 
 __global__ void softmax_fused_opt( const float* d_in,float* d_out,const int& N_blocks);
 
-__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_blocks);
+__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_loops);

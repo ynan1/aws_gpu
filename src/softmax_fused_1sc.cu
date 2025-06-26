@@ -1,8 +1,8 @@
 #include "softmax_cuda_fused.cuh"
 
 //Kernel to find the softmax
-__device__ float max_val[THREADS_PER_BLOCK]; // Pointer to max_val in device memory
-
+__device__ float max_val[N_BLOCKS]; // Pointer to max_val in device memory
+__device__ bool is_max_val_set[N_BLOCKS];
 
 __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_loops) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -29,6 +29,13 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_l
     // Write the maximum value to global memory
     if (idx == 0) { // Only the first thread writes to global memory
         max_val[blockIdx.x] = shared_max[0]; // Store the maximum value for this block
+        __threadfence();
+        is_max_val_set[blockIdx.x] = true;
     }
+    __syncthreads();
 
+    while(!is_max_val_set[blockIdx.x]);
+    if (threadIdx.x ==0){
+        printf("Max value for block %d: %f\n", blockIdx.x, max_val[blockIdx.x]);
+    }
 }
