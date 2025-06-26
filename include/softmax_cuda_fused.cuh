@@ -15,5 +15,6 @@
 
 #define THREADS_PER_BLOCK 1024
 
-__global__ void softmax_fused(float* resd, const float* xd, const int M,const int N);
+__global__ void softmax_fused_opt( const float* d_in,float* d_out,const int& N_blocks);
 
+__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_blocks);

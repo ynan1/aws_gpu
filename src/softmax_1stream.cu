@@ -10,7 +10,7 @@ thread_local std::mt19937 generator(std::random_device{}());
 
 // Generate random numbers for a part of the array
 void drand(float* arr, int size) {
-    uniform_real_distribution<float> distribution(5.0f, 10.0f);
+    normal_distribution<float> distribution(0.0f, 1.0f);
     for (int i = 0; i < size; i++) {
         arr[i] = distribution(generator);
     }

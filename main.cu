@@ -1,7 +1,6 @@
-#include "softmax_cuda.cuh"
+//#include "softmax_cuda.cuh"
+#include "softmax_cuda_fused.cuh"
 
-
-#define THREADS_PER_BLOCK 1024
 
 using namespace std;
 
@@ -97,12 +96,12 @@ int main() {
     //Kernel launch parameters
     dim3 block(THREADS_PER_BLOCK);
    
-    int grid=M;
+    int grid=N;
 
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    softmax_fused<<<grid, block>>>(dout, din, M, N);
+    softmax_fused_opt<<<grid, block>>>(din,dout, N);
 
     err=cudaDeviceSynchronize();
 
