@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
-    softmax_fused_1sc<<<grid, block>>>(din, dout);
+    softmax_fused_1sc<<<grid, block>>>(din, dout,N_loops);
 
     err = cudaDeviceSynchronize();
 
