@@ -2,17 +2,18 @@
 
 //Kernel to find the softmax
 __device__ float max_val[N_BLOCKS]; // Pointer to max_val in device memory
-__device__ bool is_max_val_set[N_BLOCKS];
+__device__ volatile bool is_max_val_set[N_BLOCKS];
 
-__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_loops) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_loops) {
+    int idx = threadIdx.x;
+    int ix= blockIdx.x * blockDim.x + idx;
     __shared__ float shared_max[THREADS_PER_BLOCK];
-    float* d_in_ptr = const_cast<float*>(d_in + blockIdx.x * N_loops * blockDim.x); // Cast to non-const pointer
+    float* d_in_ptr = const_cast<float*>(d_in + blockIdx.x * *N_loops * blockDim.x); // Cast to non-const pointer
     float max_l = -FLT_MAX;
     int stride = blockDim.x; // Number of threads in a block
 
     // Find the maximum value per thread block
-    for (int i = idx; i < N_loops * blockDim.x; i+= stride) {
+    for (int i = idx; i < *N_loops * blockDim.x; i+= stride) {
         max_l = fmaxf(max_l, d_in_ptr[i]);
     }
     shared_max[idx] = max_l; // Store the maximum value in shared memory
@@ -34,8 +35,8 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_l
     }
     __syncthreads();
 
-    while(!is_max_val_set[blockIdx.x]);
-    if (threadIdx.x ==0){
-        printf("Max value for block %d: %f\n", blockIdx.x, max_val[blockIdx.x]);
+    while(!is_max_val_set[0]);
+    if (idx==0 && blockIdx.x == 30){
+        printf("Max value for block %d: %f\n", 0, max_val[0]);
     }
 }

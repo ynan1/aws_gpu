@@ -20,4 +20,4 @@
 
 __global__ void softmax_fused_opt( const float* d_in,float* d_out,const int& N_blocks);
 
-__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int& N_loops);
+__global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_loops);
