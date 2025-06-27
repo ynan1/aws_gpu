@@ -19,10 +19,13 @@ void drand(float *arr, int size)
 int main(int argc, char *argv[])
 {
     int N = 1000000; // 1e6 number of elements in the vector
-    if (argc == 2)
+    int N_loops = 32;
+
+    if (argc == 3)
     {
         N = stoi(argv[1]);
-        if (N < 0)
+        N_loops= stoi(argv[2]);
+        if (N <= 0 || N_loops <= 0)
         {
             fprintf(stderr, "Invalid input. N should be a positive integer.\n");
             return -1;
@@ -32,20 +35,24 @@ int main(int argc, char *argv[])
     // Allocate managed memory for input and output arrays
     float *din = nullptr;
     float *dout = nullptr;
+    int grid = (N + THREADS_PER_BLOCK * N_loops - 1) / (THREADS_PER_BLOCK * N_loops);
+    int zero_pad_n = 0; // Variable to hold the number of elements for zero padding
 
-    int N_loops = 32;
-    int zero_pad_n = N % (THREADS_PER_BLOCK * N_loops);// Considering N>THREADS_PER_BLOCK * N_loops
-
+    if (N % (THREADS_PER_BLOCK * N_loops) != 0){
+        zero_pad_n = (THREADS_PER_BLOCK * N_loops)*grid-N;// Considering N>THREADS_PER_BLOCK * N_loops
+    }
+    
     err = cudaMallocManaged(&din, sizeof(float) * (N+zero_pad_n));
     err = cudaMallocManaged(&dout, sizeof(float) * (N+zero_pad_n));
-    // err=cudaMallocManaged(&max_val, sizeof(float) * THREADS_PER_BLOCK);
-    memset(din+N,0,sizeof(float)*zero_pad_n);
-
+ 
     if (err != cudaSuccess)
     {
         cerr << "Managed memory allocation failed!" << endl;
         return -1;
     }
+
+    memset(din+N,0,sizeof(float)*zero_pad_n);
+    memset(dout+N,0,sizeof(float)*zero_pad_n);
 
     // Fill input array using 4 CPU threads
     thread threads[4];
@@ -101,9 +108,6 @@ int main(int argc, char *argv[])
  
 
     dim3 block(THREADS_PER_BLOCK);
-
-    dim3 grid = ceil((N + THREADS_PER_BLOCK * N_loops - 1) / (THREADS_PER_BLOCK * N_loops));
-
 
     struct timespec start, end;
     clock_gettime(CLOCK_MONOTONIC, &start);
