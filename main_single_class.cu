@@ -18,7 +18,6 @@ void drand(float *arr, int size)
 
 int main(int argc, char *argv[])
 {
-    int N = 1000000; // 1e6 number of elements in the vector
     int* N_loops = nullptr;
 
     
@@ -36,21 +35,23 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    *N_loops=31;
+    // *N_loops=32;
 
-    if (argc == 3)
-    {
-        N = atoi(argv[1]);
-        *N_loops= atoi(argv[2]);
-        if (N <= 0 || *N_loops <= 0)
-        {
-            fprintf(stderr, "Invalid input. N should be a positive integer.\n");
-            return -1;
-        }
-    }
+    // if (argc == 2)
+    // {
+    //     N = atoi(argv[1]);
+    //     if (N <= 0 )
+    //     {
+    //         fprintf(stderr, "Invalid input. N should be a positive integer.\n");
+    //         return -1;
+    //     }
+    // }
 
 
-    int grid = (N + THREADS_PER_BLOCK * *N_loops - 1) / (THREADS_PER_BLOCK * *N_loops);
+    int grid = 1024;//N_BLOCKS;
+
+    *N_loops = 32;// (N + grid* THREADS_PER_BLOCK - 1)/(THREADS_PER_BLOCK*grid);
+
     if (N % (THREADS_PER_BLOCK * *N_loops) != 0){
         zero_pad_n = (THREADS_PER_BLOCK * *N_loops)*grid-N;// Considering N>THREADS_PER_BLOCK * N_loops
     }
@@ -114,10 +115,14 @@ int main(int argc, char *argv[])
         norm += expf(din[i] - max_elem);
     }
 
+    
     for (int i = 0; i < N; i++)
     {
         exp_cpu[i] = expf(din[i] - max_elem) / norm;
     }
+
+    cout<< "Max element: " <<setprecision(9)<< max_elem << endl;
+    cout<< "Norm: " <<setprecision(9)<< norm << endl;
 
     // Kernel launch parameters
  
