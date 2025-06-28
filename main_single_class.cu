@@ -48,9 +48,9 @@ int main(int argc, char *argv[])
     // }
 
 
-    int grid = 1024;//N_BLOCKS;
+    int grid = N_BLOCKS;
 
-    *N_loops = 32;// (N + grid* THREADS_PER_BLOCK - 1)/(THREADS_PER_BLOCK*grid);
+    *N_loops =  (N + grid* THREADS_PER_BLOCK - 1)/(THREADS_PER_BLOCK*grid);
 
     if (N % (THREADS_PER_BLOCK * *N_loops) != 0){
         zero_pad_n = (THREADS_PER_BLOCK * *N_loops)*grid-N;// Considering N>THREADS_PER_BLOCK * N_loops
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     }
 
     // Copy input data to GPU
-    err = cudaMemPrefetchAsync(din, sizeof(float) * N, 0);
+    err = cudaMemPrefetchAsync(din, sizeof(float) * (N+zero_pad_n), 0);
 
     if (err != cudaSuccess)
     {

@@ -2,9 +2,10 @@
 
 //Kernel to find the softmax
 __device__ float max_val[N_BLOCKS]; // Pointer to max_val in device memory
-__device__ volatile bool is_max_val_set[N_BLOCKS];
+__device__ int total_inc=0;
+// __device__ volatile bool is_max_val_set[N_BLOCKS];
 __device__ float norm_glb[N_BLOCKS];
-__device__ volatile bool is_max_val_set_g;
+__device__ volatile bool is_max_val_set_g=false;
 
 __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_loops) {
     int idx = threadIdx.x;
@@ -33,9 +34,13 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     if (idx == 0) { // Only the first thread writes to global memory
         max_val[blockIdx.x] = shared_max_norm[0]; // Store the maximum value for this block
         __threadfence();
-        is_max_val_set[blockIdx.x] = true;
+        int ticket=atomicAdd(&total_inc, 1);
+        if (ticket == gridDim.x-1) {
+            is_max_val_set_g = true; // Set the global flag to indicate max value is set for the block
+        }
+
     }
-     __syncthreads();
+    //  __syncthreads();
 
      if (blockIdx.x == 125) {
         printf("Max value for block %d: %.9f %d\n", blockIdx.x, max_val[blockIdx.x],is_max_val_set[blockIdx.x]);
@@ -44,21 +49,23 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
 
 
     // Considering N_blocks < THREADS_PER_BLOCK, it should run within a single block
+    while(!(is_max_val_set_g));
     for (int i = gridDim.x/2; i > 0; i >>= 1) {
         if (ix < i && ix + i < N_BLOCKS) {
-            while(!(is_max_val_set[ix] && is_max_val_set[ix+i]));
             max_val[ix] = fmaxf(max_val[ix], max_val[ix+i]);
         }
         __syncthreads();
     }
 
     if (ix == 0) {
-        is_max_val_set_g = true; // Set the global flag to indicate max value is set for the block
+        __threadfence();
+        is_max_val_set_g = false; // Set the global flag to indicate max value is set for the block
+        total_inc = 0;
     }
  
 
-    while(!is_max_val_set_g);
-    max_l= max_val[0]; // maximum value across all blocks
+    while(is_max_val_set_g);
+    max_l = max_val[0]; // maximum value across all blocks
 
 
     if (ix == 0||ix == 1025){
@@ -92,19 +99,23 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     if (idx == 0) {
         norm_glb[blockIdx.x] = shared_max_norm[0]; // Total norm for the block
         __threadfence();
-        is_max_val_set[blockIdx.x] = false;
+        int ticket=atomicAdd(&total_inc, 1);
+        if (ticket == gridDim.x-1) {
+            is_max_val_set_g = true; // Set the global flag to indicate max value is set for the block
+        }
     }
     // __syncthreads();
 
+    while(!is_max_val_set_g);
     for (int i = gridDim.x/2; i > 0; i >>= 1) {
         if (ix < i && ix + i < N_BLOCKS) {
-            while(is_max_val_set[ix+i] || is_max_val_set[ix]);
             norm_glb[ix]+= norm_glb[ix+i];
         }
         __syncthreads();
     }
 
     if (ix == 0) {
+        __threadfence();
         is_max_val_set_g = false; // Set the global flag to indicate max value is set for the block
     }
 
