@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    *N_loops=32;
+    *N_loops=31;
 
     if (argc == 3)
     {
