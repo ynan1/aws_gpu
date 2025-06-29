@@ -1,0 +1,26 @@
+==9382== NVPROF is profiling process 9382, command: ./gpu_softmax_fused_1cl
+==9382== Profiling application: ./gpu_softmax_fused_1cl
+==9382== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:  100.00%  34.121ms         1  34.121ms  34.121ms  34.121ms  softmax_fused_1sc(float const *, float*, int const *)
+      API calls:   76.56%  180.67ms         3  60.223ms  19.100us  180.62ms  cudaMallocManaged
+                   14.46%  34.128ms         1  34.128ms  34.128ms  34.128ms  cudaDeviceSynchronize
+                    6.01%  14.171ms         2  7.0855ms  6.0035ms  8.1675ms  cudaFree
+                    1.46%  3.4465ms         1  3.4465ms  3.4465ms  3.4465ms  cudaMemPrefetchAsync
+                    1.29%  3.0539ms       114  26.788us      84ns  1.7487ms  cuDeviceGetAttribute
+                    0.21%  489.74us         1  489.74us  489.74us  489.74us  cudaLaunchKernel
+                    0.00%  11.328us         1  11.328us  11.328us  11.328us  cuDeviceGetName
+                    0.00%  4.5670us         1  4.5670us  4.5670us  4.5670us  cuDeviceTotalMem
+                    0.00%  1.7170us         1  1.7170us  1.7170us  1.7170us  cuDeviceGetPCIBusId
+                    0.00%  1.1870us         3     395ns      97ns     983ns  cuDeviceGetCount
+                    0.00%     626ns         2     313ns     114ns     512ns  cuDeviceGet
+                    0.00%     267ns         1     267ns     267ns     267ns  cuModuleGetLoadingMode
+                    0.00%     154ns         1     154ns     154ns     154ns  cuDeviceGetUuid
+
+==9382== Unified Memory profiling result:
+Device "Tesla T4 (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+     834  314.40KB  4.0000KB  2.0000MB  256.0625MB  44.44071ms  Host To Device
+    1536  170.67KB  4.0000KB  0.9961MB  256.0000MB  42.42544ms  Device To Host
+      96         -         -         -           -  43.18291ms  Gpu page fault groups
+Total CPU Page faults: 1153
