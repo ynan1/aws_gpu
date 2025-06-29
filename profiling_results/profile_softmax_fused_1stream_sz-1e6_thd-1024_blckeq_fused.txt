@@ -1,0 +1,26 @@
+==5557== NVPROF is profiling process 5557, command: ./gpu_softmax_fused_1cl
+==5557== Profiling application: ./gpu_softmax_fused_1cl
+==5557== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:  100.00%  2.0712ms         1  2.0712ms  2.0712ms  2.0712ms  softmax_fused_1sc(float const *, float*, int const *)
+      API calls:   96.45%  177.72ms         3  59.241ms  19.239us  177.68ms  cudaMallocManaged
+                    1.56%  2.8714ms       114  25.188us      85ns  1.5776ms  cuDeviceGetAttribute
+                    1.13%  2.0797ms         1  2.0797ms  2.0797ms  2.0797ms  cudaDeviceSynchronize
+                    0.43%  800.99us         1  800.99us  800.99us  800.99us  cudaMemPrefetchAsync
+                    0.23%  414.67us         2  207.33us  187.95us  226.72us  cudaFree
+                    0.20%  362.32us         1  362.32us  362.32us  362.32us  cudaLaunchKernel
+                    0.01%  10.199us         1  10.199us  10.199us  10.199us  cuDeviceGetName
+                    0.00%  4.4790us         1  4.4790us  4.4790us  4.4790us  cuDeviceTotalMem
+                    0.00%  1.9370us         1  1.9370us  1.9370us  1.9370us  cuDeviceGetPCIBusId
+                    0.00%     871ns         3     290ns      86ns     675ns  cuDeviceGetCount
+                    0.00%     664ns         2     332ns     111ns     553ns  cuDeviceGet
+                    0.00%     215ns         1     215ns     215ns     215ns  cuModuleGetLoadingMode
+                    0.00%     172ns         1     172ns     172ns     172ns  cuDeviceGetUuid
+
+==5557== Unified Memory profiling result:
+Device "Tesla T4 (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+     105  76.800KB  4.0000KB  2.0000MB  7.875000MB  1.489057ms  Host To Device
+      48  165.33KB  4.0000KB  0.9961MB  7.750000MB  1.272420ms  Device To Host
+       7         -         -         -           -  2.387566ms  Gpu page fault groups
+Total CPU Page faults: 50

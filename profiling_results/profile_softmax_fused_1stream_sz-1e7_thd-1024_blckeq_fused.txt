@@ -1,0 +1,26 @@
+==5305== NVPROF is profiling process 5305, command: ./gpu_softmax_fused_1cl
+==5305== Profiling application: ./gpu_softmax_fused_1cl
+==5305== Profiling result:
+            Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+ GPU activities:  100.00%  14.315ms         1  14.315ms  14.315ms  14.315ms  softmax_fused_1sc(float const *, float*, int const *)
+      API calls:   86.05%  167.62ms         3  55.874ms  21.136us  167.57ms  cudaMallocManaged
+                    7.35%  14.324ms         1  14.324ms  14.324ms  14.324ms  cudaDeviceSynchronize
+                    3.41%  6.6494ms         1  6.6494ms  6.6494ms  6.6494ms  cudaMemPrefetchAsync
+                    2.18%  4.2433ms         2  2.1216ms  1.8410ms  2.4023ms  cudaFree
+                    0.74%  1.4396ms       114  12.627us      82ns  758.86us  cuDeviceGetAttribute
+                    0.25%  493.54us         1  493.54us  493.54us  493.54us  cudaLaunchKernel
+                    0.01%  10.740us         1  10.740us  10.740us  10.740us  cuDeviceGetName
+                    0.00%  4.2990us         1  4.2990us  4.2990us  4.2990us  cuDeviceTotalMem
+                    0.00%  1.6240us         1  1.6240us  1.6240us  1.6240us  cuDeviceGetPCIBusId
+                    0.00%     894ns         3     298ns     122ns     611ns  cuDeviceGetCount
+                    0.00%     686ns         2     343ns     113ns     573ns  cuDeviceGet
+                    0.00%     200ns         1     200ns     200ns     200ns  cuModuleGetLoadingMode
+                    0.00%     148ns         1     148ns     148ns     148ns  cuDeviceGetUuid
+
+==5305== Unified Memory profiling result:
+Device "Tesla T4 (0)"
+   Count  Avg Size  Min Size  Max Size  Total Size  Total Time  Name
+     516  152.19KB  4.0000KB  2.0000MB  76.68750MB  13.75078ms  Host To Device
+     468  167.38KB  4.0000KB  0.9961MB  76.50000MB  12.67222ms  Device To Host
+      58         -         -         -           -  18.28720ms  Gpu page fault groups
+Total CPU Page faults: 360

@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     if (N % (THREADS_PER_BLOCK * *N_loops) != 0){
         zero_pad_n = (THREADS_PER_BLOCK * *N_loops)*grid-N;// Considering N>THREADS_PER_BLOCK * N_loops
     }
+    // cout<<zero_pad_n<<endl;
 
     err = cudaMallocManaged(&din, sizeof(float) * (N+zero_pad_n));
     err = cudaMallocManaged(&dout, sizeof(float) * (N+zero_pad_n));
@@ -121,8 +122,8 @@ int main(int argc, char *argv[])
         exp_cpu[i] = expf(din[i] - max_elem) / norm;
     }
 
-    cout<< "Max element: " <<setprecision(9)<< max_elem << endl;
-    cout<< "Norm: " <<setprecision(9)<< norm << endl;
+    // cout<< "Max element: " <<setprecision(9)<< max_elem << endl;
+    // cout<< "Norm: " <<setprecision(9)<<norm<< endl;
 
     // Kernel launch parameters
  

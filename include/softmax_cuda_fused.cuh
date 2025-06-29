@@ -15,7 +15,7 @@
 
 #define THREADS_PER_BLOCK 1024
 
-constexpr int N = 1e7;
+constexpr int N = 33554432;
 
 constexpr int ceil_div(int a, int b) {
     return (a + b - 1) / b;
@@ -26,7 +26,7 @@ constexpr int ceil_log2(unsigned int x) {
     unsigned int pow2 = 1;
     while (pow2 < x) {
         pow2 <<= 1;
-        ++log;
+        log++;
     }
     return log;
 }
