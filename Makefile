@@ -12,6 +12,10 @@
 #   - `make clean` to remove compiled test files
 
 .PHONY: cmp_exp cmp_exp_dbg run_exp clean cmp_test cmp_test_dbg run_test cmp_test_unified cmp_test_unified_dbg softmax_fused softmax_fused_dbg softmax_test softmax_test_dbg
+softmax_fused_1sc_v2:
+	nvcc -Iinclude main_single_class.cu src/softmax_fused_1sc_v2.cu -o gpu_softmax_fused_1sc_v2
+softmax_fused_1sc_v2_dbg:
+	nvcc -g -G -Iinclude main_single_class.cu src/softmax_fused_1sc_v2.cu -o gpu_softmax_fused_1sc_v2_dbg
 softmax_fused_1cl:
 	nvcc -Iinclude main_single_class.cu src/softmax_fused_1sc.cu -o gpu_softmax_fused_1cl
 softmax_fused_1cl_dbg:

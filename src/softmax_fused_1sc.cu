@@ -42,9 +42,9 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     }
     //  __syncthreads();
 
-     if (blockIdx.x == 125) {
-        printf("Max value for block %d: %.9f %d\n", blockIdx.x, max_val[blockIdx.x],is_max_val_set[blockIdx.x]);
-    }
+    //  if (blockIdx.x == 125) {
+    //     printf("Max value for block %d: %.9f %d\n", blockIdx.x, max_val[blockIdx.x],is_max_val_set[blockIdx.x]);
+    // }
 
 
 
@@ -68,9 +68,9 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     max_l = max_val[0]; // maximum value across all blocks
 
 
-    if (ix == 0||ix == 1025){
-        printf("Max value for block %d: %.9f\n", 0, max_l);
-    }
+    // if (ix == 0||ix == 1025){
+    //     printf("Max value for block %d: %.9f\n", 0, max_l);
+    // }
 
     //Exponent and normalization
     float *d_out_ptr = d_out + blockIdx.x * *N_loops * blockDim.x; // Adjust output pointer to the correct block
@@ -122,9 +122,9 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     while(is_max_val_set_g);
     norm = norm_glb[0]; // Total norm across all blocks
 
-    if (ix == 0 || ix == 1025) {
-        printf("Total norm for block %d: %.9f\n", 0, norm);
-    }
+    // if (ix == 0 || ix == 1025) {
+    //     printf("Total norm for block %d: %.9f\n", 0, norm);
+    // }
 
     // Calculate softmax
     for (int i = idx; i < *N_loops * blockDim.x; i += stride) {
