@@ -1,5 +1,5 @@
-//#include "softmax_cuda.cuh"
-#include "softmax_cuda_fused.cuh"
+#include "softmax_cuda.cuh"
+// #include "softmax_cuda_fused.cuh"
 
 
 using namespace std;
@@ -48,6 +48,7 @@ int main() {
 
     // Copy input data to GPU
     err=cudaMemPrefetchAsync(din, sizeof(float) * MAT_SIZE, 0);
+    err=cudaMemPrefetchAsync(dout, sizeof(float) * MAT_SIZE, 0);
 
 
     float* max_elem= new float[M];//per row max
@@ -99,17 +100,32 @@ int main() {
     int grid=N;
 
     struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
+    // clock_gettime(CLOCK_MONOTONIC, &start);
 
-    softmax_fused_opt<<<grid, block>>>(din,dout, N);
+    cudaEvent_t start_cuda, stop_cuda;
+
+    cudaEventCreate(&start_cuda);
+    cudaEventCreate(&stop_cuda);
+
+    cudaEventRecord(start_cuda);
+
+    // softmax_fused_opt<<<grid, block>>>(din,dout, N);
+    softmax_fused<<<grid, block>>>(dout,din,M,N);
+    cudaEventRecord(stop_cuda);
+
 
     err=cudaDeviceSynchronize();
 
-    clock_gettime(CLOCK_MONOTONIC, &end);
+    // clock_gettime(CLOCK_MONOTONIC, &end);
 
-    double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec)*1e-9;
-    cout<< "Time taken for GPU computation: "
-         << elapsed_time << " seconds" << endl;
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start_cuda, stop_cuda);
+
+    cout<<"Kernel execution time:"<<setprecision(3)<<milliseconds<<"ms"<<endl;
+
+    // double elapsed_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec)*1e-9;
+    // cout<< "Time taken for GPU computation: "
+        //  << elapsed_time << " seconds" << endl;
 
     if (err != cudaSuccess) {
          cerr << "Device synchronization failed!" << endl;

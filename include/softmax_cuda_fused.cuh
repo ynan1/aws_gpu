@@ -15,7 +15,7 @@
 
 #define THREADS_PER_BLOCK 1024
 
-constexpr int N = 33554432;
+constexpr int N = 3e7;
 
 constexpr int ceil_div(int a, int b) {
     return (a + b - 1) / b;

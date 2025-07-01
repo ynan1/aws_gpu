@@ -89,6 +89,8 @@ int main(int argc, char *argv[])
 
     // Copy input data to GPU
     err = cudaMemPrefetchAsync(din, sizeof(float) * (N+zero_pad_n), 0);
+    err = cudaMemPrefetchAsync(dout, sizeof(float) * (N+zero_pad_n), 0);
+
 
     if (err != cudaSuccess)
     {
