@@ -37,3 +37,5 @@ constexpr int N_BLOCKS = 1 << (ceil_log2(ceil_div(N, THREADS_PER_BLOCK))/2);
 __global__ void softmax_fused_opt( const float* d_in,float* d_out,const int& N_blocks);
 
 __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_loops);
+
+__global__ void softmax_fused_1sc_v2( const float* d_in,float* d_out,const int* N_loops);
