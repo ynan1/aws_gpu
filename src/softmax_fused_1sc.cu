@@ -35,7 +35,7 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     // Write the maximum value to global memory
     if (idx == 0) { // Only the first thread writes to global memory
         max_val[blockIdx.x] = shared_max_norm[0]; // Store the maximum value for this block
-        __threadfence();
+        // __threadfence();
         // is_max_val_set[blockIdx.x] = true;
         int ticket=atomicAdd(&total_inc, 1);
         if (ticket == gridDim.x-1) {
@@ -56,7 +56,7 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     }
 
     if (ix == 0) {
-        __threadfence();
+        // __threadfence();
         is_max_val_set_g = false; // Set the global flag to indicate max value is set for the block
         total_inc = 0;
     }
@@ -95,7 +95,7 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
 
     if (idx == 0) {
         norm_glb[blockIdx.x] = shared_max_norm[0]; // Total norm for the block
-        __threadfence();
+        // __threadfence();
         // is_norm_val_set[blockIdx.x] = true;
         int ticket=atomicAdd(&total_inc, 1);
         if (ticket == gridDim.x-1) {
@@ -114,7 +114,7 @@ __global__ void softmax_fused_1sc( const float* d_in,float* d_out,const int* N_l
     }
 
     if (ix == 0) {
-        __threadfence();
+        // __threadfence();
         is_norm_val_set_g = false; // Set the global flag to indicate max value is set for the block
     }
 
