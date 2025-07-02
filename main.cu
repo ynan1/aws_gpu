@@ -22,7 +22,7 @@ int main() {
     // Allocate managed memory for input and output arrays
     float* din= nullptr;
     float* dout= nullptr;
-    int M=1024;
+    int M=32;
     int N=32768;
     int MAT_SIZE = M * N; // Total number of elements
 
@@ -97,7 +97,7 @@ int main() {
     //Kernel launch parameters
     dim3 block(THREADS_PER_BLOCK);
    
-    int grid=N;
+    int grid=M;
 
     struct timespec start, end;
     // clock_gettime(CLOCK_MONOTONIC, &start);
